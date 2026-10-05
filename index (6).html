@@ -1,0 +1,1335 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guia de Processos Administrativos — Coordenação Administrativa</title>
+<meta name="description" content="Central de consulta dos processos administrativos da Diretoria Socioeducacional (DSE).">
+
+<!--
+  ============================================================================
+  PORTAL DE PROCESSOS DSE — COORDENAÇÃO ADMINISTRATIVA
+  Arquivo único (HTML + CSS + JavaScript). Sem frameworks e sem dependências externas.
+
+  ORGANIZAÇÃO DO ARQUIVO
+    1. <style>  ........ identidade visual (variáveis CSS no topo) e layout
+    2. <body>   ........ apenas o "esqueleto" (cabeçalho, menu, área de conteúdo)
+    3. <script> ........ dividido em:
+         A) CONFIG  .... versão do portal e data do Guia de origem
+         B) DADOS   .... TODO o conteúdo (processos, FAQ, contatos, manutenção)  <-- edite aqui
+         C) MOTOR   .... código que monta as telas, a busca e a navegação (não precisa mexer)
+
+  Para atualizar conteúdos, veja a seção "Como manter e atualizar este portal" dentro do próprio portal.
+  Fonte do conteúdo: Guia de Processos da Coordenação Administrativa DSE 2026 — versão revisada de 29/09/2026.
+  ============================================================================
+-->
+
+<style>
+/* ==========================================================================
+   1. IDENTIDADE VISUAL — altere as cores/medidas aqui
+   ========================================================================== */
+:root{
+  --brand:#0f4c81;       /* cor principal (azul institucional) */
+  --brand-dark:#0a3558;
+  --brand-light:#e7f0f9;
+  --bg:#f4f6fa;
+  --surface:#ffffff;
+  --ink:#1b2430;         /* texto principal */
+  --muted:#4f5b6d;       /* texto secundário (contraste AA sobre branco) */
+  --line:#d9e0ea;
+  --ok:#17744a;
+  --warn-bg:#fff3dc;
+  --warn-line:#e2a100;
+  --warn-ink:#6b4400;
+  --danger-bg:#fdeaea;
+  --danger-line:#c0392b;
+  --danger-ink:#7a1f16;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,32,56,.06),0 4px 14px rgba(16,32,56,.06);
+  --shadow-lg:0 10px 30px rgba(16,32,56,.14);
+  --topbar-h:68px;
+  --sidebar-w:288px;
+  --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--topbar-h) + 16px)}
+body{margin:0;font:16px/1.6 var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+h1,h2,h3{line-height:1.25;margin:0}
+p{margin:0 0 .8em}
+a{color:var(--brand)}
+button{font:inherit;color:inherit;cursor:pointer}
+ul{margin:0 0 .8em;padding-left:1.2em}
+li{margin:.2em 0}
+
+/* Foco visível para navegação por teclado */
+:focus-visible{outline:3px solid #ffb703;outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-999px;top:8px;background:#fff;padding:10px 14px;border-radius:8px;z-index:200;box-shadow:var(--shadow-lg)}
+.skip:focus{left:8px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* --------------------------- Cabeçalho --------------------------- */
+.topbar{position:fixed;inset:0 0 auto 0;height:var(--topbar-h);background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 20px;z-index:60}
+.burger{display:none;border:1px solid var(--line);background:#fff;border-radius:10px;width:44px;height:44px;font-size:1.3rem;line-height:1}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;border:0;background:none;padding:0;text-align:left}
+.brand-mark{flex:none;width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--brand),#2b7bbf);color:#fff;display:grid;place-items:center;font-weight:700;letter-spacing:.02em}
+.brand h1{font-size:1.08rem;color:var(--brand-dark);white-space:nowrap}
+.brand p{margin:0;font-size:.8rem;color:var(--muted);white-space:nowrap}
+.search{position:relative;flex:1;max-width:580px;margin-left:auto}
+.search input{width:100%;height:44px;border:1.5px solid var(--line);border-radius:999px;padding:0 44px 0 44px;font:inherit;background:#f8fafd;color:var(--ink)}
+.search input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(15,76,129,.18);background:#fff}
+.search .ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.search .clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;background:transparent;border-radius:50%;color:var(--muted);font-size:1.1rem;display:none}
+.search .clear:hover{background:var(--brand-light)}
+.results{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-lg);max-height:70vh;overflow:auto;padding:6px;display:none}
+.results.open{display:block}
+.results .meta{padding:8px 12px;font-size:.82rem;color:var(--muted)}
+.results ul{list-style:none;margin:0;padding:0}
+.results li{margin:0}
+.hit{display:block;width:100%;text-align:left;border:0;background:transparent;padding:10px 12px;border-radius:10px}
+.hit:hover,.hit:focus-visible{background:var(--brand-light)}
+.hit b{display:block;font-weight:600}
+.hit small{color:var(--muted)}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--brand-light);color:var(--brand-dark);padding:2px 8px;border-radius:999px;margin-right:6px}
+.btn-top{flex:none;border:1.5px solid var(--brand);background:#fff;color:var(--brand);border-radius:999px;height:44px;padding:0 16px;font-weight:600;white-space:nowrap}
+.btn-top:hover{background:var(--brand);color:#fff}
+
+/* --------------------------- Menu lateral --------------------------- */
+.sidebar{position:fixed;top:var(--topbar-h);bottom:0;left:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--line);overflow-y:auto;padding:16px 12px 32px;z-index:50;transition:transform .25s ease}
+.sidebar .label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 12px}
+.sidebar ol,.sidebar ul{list-style:none;margin:0 0 12px;padding:0}
+.nav-link{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:transparent;padding:10px 12px;border-radius:10px;color:var(--ink);font-size:.95rem;line-height:1.3}
+.nav-link:hover{background:var(--brand-light)}
+.nav-link .num{flex:none;width:26px;height:26px;border-radius:8px;background:#eef2f8;color:var(--muted);font-size:.78rem;font-weight:700;display:grid;place-items:center}
+.nav-link[aria-current="page"]{background:var(--brand);color:#fff;font-weight:600}
+.nav-link[aria-current="page"] .num{background:rgba(255,255,255,.22);color:#fff}
+.scrim{display:none}
+
+/* --------------------------- Conteúdo --------------------------- */
+main{margin-left:var(--sidebar-w);padding:calc(var(--topbar-h) + 32px) 36px 40px;max-width:calc(1120px + var(--sidebar-w))}
+main:focus{outline:none}
+.page{animation:fade .28s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.page[hidden]{display:none}
+.page-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:22px}
+.page-head .badge{flex:none;width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:1.6rem;background:var(--c-l,var(--brand-light))}
+.page-head h2{font-size:1.75rem;color:var(--brand-dark)}
+.page-head p{color:var(--muted);margin:.35em 0 0;font-size:1.04rem;max-width:70ch}
+.page-head h2:focus{outline:none}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:22px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px}
+.card h3{font-size:1.02rem;margin-bottom:12px;color:var(--brand-dark);display:flex;align-items:center;gap:8px}
+.block-title{font-size:1.15rem;margin:30px 0 12px;color:var(--brand-dark)}
+.block-title small{font-weight:400;color:var(--muted);font-size:.9rem;margin-left:6px}
+
+/* Lista "quando utilizar" */
+.when{list-style:none;padding:0;margin:0}
+.when li{position:relative;padding-left:26px;margin:.5em 0}
+.when li::before{content:"➜";position:absolute;left:0;color:var(--brand);font-weight:700}
+
+/* Checklist visual */
+.check{list-style:none;padding:0;margin:0}
+.check li{margin:.35em 0}
+.check label{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+.check label:hover{background:var(--brand-light)}
+.check input{appearance:none;flex:none;width:22px;height:22px;margin:2px 0 0;border:2px solid #7d8ba0;border-radius:6px;background:#fff;display:grid;place-items:center;cursor:pointer}
+.check input:checked{background:var(--ok);border-color:var(--ok)}
+.check input:checked::after{content:"✓";color:#fff;font-size:.9rem;font-weight:700;line-height:1}
+.check input:checked + span{color:var(--muted);text-decoration:line-through}
+.check input:focus-visible{outline:3px solid #ffb703;outline-offset:2px}
+.progress{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:.88rem;color:var(--muted)}
+.bar{flex:1;height:8px;border-radius:99px;background:#e5eaf2;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .25s ease}
+.link-btn{border:0;background:none;color:var(--brand);text-decoration:underline;padding:4px;font-size:.88rem}
+
+/* Fluxo interativo */
+.flow{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:0;align-items:stretch}
+.flow li{position:relative;flex:1 1 150px;min-width:150px;margin:0;padding-right:34px;display:flex}
+.flow li:last-child{padding-right:0}
+.flow li:not(:last-child)::after{content:"";position:absolute;right:4px;top:50%;width:26px;height:2px;background:var(--brand);transform:translateY(-50%)}
+.flow li:not(:last-child)::before{content:"";position:absolute;right:4px;top:50%;border:6px solid transparent;border-left:9px solid var(--brand);border-right:0;transform:translateY(-50%)}
+.step{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);transition:transform .15s ease,border-color .15s ease,background .15s}
+.step:hover{transform:translateY(-2px);border-color:var(--brand)}
+.step .n{width:28px;height:28px;border-radius:50%;background:var(--brand-light);color:var(--brand-dark);font-weight:700;font-size:.85rem;display:grid;place-items:center}
+.step .t{font-weight:600;line-height:1.25}
+.step[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+.step[aria-pressed="true"] .n{background:#fff;color:var(--brand)}
+.flow-detail{margin-top:14px;background:var(--brand-light);border-left:5px solid var(--brand);border-radius:10px;padding:14px 18px}
+.flow-detail b{color:var(--brand-dark)}
+
+/* Tabela "Quem acionar" */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;min-width:420px}
+caption{text-align:left;padding:12px 18px;font-weight:600;color:var(--muted);font-size:.88rem}
+th,td{text-align:left;padding:12px 18px;border-top:1px solid var(--line);vertical-align:top}
+th{background:#f1f5fb;font-size:.82rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td:first-child{font-weight:600;width:48%}
+td .resp{display:inline-block;background:var(--brand-light);color:var(--brand-dark);padding:2px 10px;border-radius:999px;font-weight:600;font-size:.92rem}
+
+/* Accordion */
+.acc-tools{display:flex;justify-content:flex-end;margin:-6px 0 8px}
+.acc{background:#fff;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden}
+.acc-btn{width:100%;display:flex;align-items:center;gap:12px;justify-content:space-between;text-align:left;border:0;background:#fff;padding:16px 20px;font-weight:600;font-size:1.02rem}
+.acc-btn:hover{background:#f7faff}
+.acc-btn .chev{flex:none;width:28px;height:28px;border-radius:50%;background:var(--brand-light);color:var(--brand);display:grid;place-items:center;transition:transform .25s ease;font-size:.8rem}
+.acc-btn[aria-expanded="true"]{background:#f7faff}
+.acc-btn[aria-expanded="true"] .chev{transform:rotate(180deg);background:var(--brand);color:#fff}
+.acc-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
+.acc-panel.open{grid-template-rows:1fr}
+.acc-panel > div{overflow:hidden}
+.acc-body{padding:4px 22px 18px}
+.acc-body h4{margin:16px 0 6px;font-size:.95rem;color:var(--brand-dark)}
+.acc.flash{animation:flash 1.6s ease}
+@keyframes flash{0%,60%{box-shadow:0 0 0 4px rgba(255,183,3,.7)}100%{box-shadow:var(--shadow)}}
+
+/* Avisos */
+.note,.warn,.danger{border-radius:12px;padding:12px 16px;margin:12px 0;border-left:5px solid;display:flex;gap:10px;align-items:flex-start}
+.note{background:var(--brand-light);border-color:var(--brand);color:var(--brand-dark)}
+.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-ink)}
+.danger{background:var(--danger-bg);border-color:var(--danger-line);color:var(--danger-ink)}
+.note .ic,.warn .ic,.danger .ic{flex:none;font-size:1.1rem;line-height:1.5}
+.alert-big{font-size:1.04rem;font-weight:600}
+.next{background:linear-gradient(135deg,var(--brand),#256fb0);color:#fff;border-radius:var(--radius);padding:20px 24px;margin-top:28px;box-shadow:var(--shadow)}
+.next h3{font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;opacity:.85;margin-bottom:6px}
+.next p{margin:0;font-size:1.05rem}
+
+mark.hl{background:#ffe27a;color:#1b2430;border-radius:3px;padding:0 1px}
+
+/* --------------------------- Página inicial --------------------------- */
+.hero{background:linear-gradient(135deg,var(--brand-dark),var(--brand) 60%,#2f84c9);color:#fff;border-radius:22px;padding:34px 34px 30px;box-shadow:var(--shadow-lg);margin-bottom:26px}
+.hero h2{font-size:1.9rem;margin-bottom:8px}
+.hero p{max-width:62ch;opacity:.95;margin-bottom:18px}
+.finder{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:rgba(255,255,255,.14);border-radius:14px;padding:12px}
+.finder label{font-weight:600}
+.finder select{flex:1 1 260px;height:44px;border-radius:10px;border:0;padding:0 12px;font:inherit;color:var(--ink);background:#fff}
+.finder button{height:44px;border:0;border-radius:10px;padding:0 20px;background:#ffb703;color:#1b2430;font-weight:700}
+.finder button:hover{background:#ffc833}
+.dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.dcard{position:relative;display:flex;flex-direction:column;gap:8px;text-align:left;background:#fff;border:1px solid var(--line);border-top:5px solid var(--c,var(--brand));border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);transition:transform .18s ease,box-shadow .18s ease}
+.dcard:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.dcard .ic{width:46px;height:46px;border-radius:13px;background:var(--c-l,var(--brand-light));display:grid;place-items:center;font-size:1.4rem}
+.dcard b{font-size:1.05rem;color:var(--brand-dark)}
+.dcard span.d{color:var(--muted);font-size:.92rem;line-height:1.45}
+.dcard .go{margin-top:auto;font-weight:600;color:var(--brand);font-size:.9rem}
+.five{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;counter-reset:q;list-style:none;padding:0;margin:0}
+.five li{counter-increment:q;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin:0}
+.five li::before{content:counter(q);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;margin-bottom:8px}
+.five b{display:block;color:var(--brand-dark)}
+.five span{color:var(--muted);font-size:.92rem}
+
+/* Apresentação: papel da coordenação */
+.vs{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.vs .card.yes{border-top:5px solid var(--ok)}
+.vs .card.no{border-top:5px solid var(--danger-line)}
+.vs li{margin:.5em 0}
+
+/* Reclassificação */
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.field{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.field b{display:flex;align-items:center;gap:8px;color:var(--brand-dark);margin-bottom:4px}
+.field .k{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--brand-light);font-size:.9rem}
+.field span{color:var(--muted);font-size:.93rem;line-height:1.45}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.form label{display:block;font-weight:600;font-size:.9rem;margin-bottom:4px}
+.form input,.form textarea{width:100%;font:inherit;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;color:var(--ink)}
+.form input:focus,.form textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(15,76,129,.18)}
+.form .full{grid-column:1/-1}
+.btn{border:0;border-radius:10px;background:var(--brand);color:#fff;padding:11px 18px;font-weight:600}
+.btn:hover{background:var(--brand-dark)}
+.btn.sec{background:#fff;color:var(--brand);border:1.5px solid var(--brand)}
+.btn.sec:hover{background:var(--brand-light)}
+.out{width:100%;min-height:150px;font:.92rem/1.5 Consolas,monospace;border:1.5px dashed var(--line);border-radius:10px;padding:12px;background:#f8fafd;color:var(--ink);margin-top:12px}
+
+/* Contatos */
+.contacts{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.contato{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:5px solid var(--c,var(--brand))}
+.contato h3{font-size:1.1rem;color:var(--brand-dark);margin-bottom:6px}
+.contato .fn{display:inline-block;background:var(--brand-light);color:var(--brand-dark);font-size:.8rem;font-weight:700;border-radius:999px;padding:3px 10px;margin-bottom:10px}
+.contato ul{font-size:.93rem;color:var(--muted)}
+.contato dl{margin:10px 0 0;font-size:.92rem}
+.contato dt{font-weight:700;display:inline}
+.contato dd{display:inline;margin:0 0 0 4px}
+.contato .row{margin:3px 0}
+
+/* FAQ */
+.faq-tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;font-size:.9rem}
+.chip[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+.chip:hover{border-color:var(--brand)}
+
+code,kbd{font:.88em Consolas,monospace;background:#eef2f8;padding:1px 6px;border-radius:5px}
+pre{background:#10233a;color:#e8f0fa;padding:14px 16px;border-radius:12px;overflow:auto;font:.85rem/1.5 Consolas,monospace}
+footer{margin:40px 0 0;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:.86rem}
+
+/* --------------------------- Responsivo --------------------------- */
+@media (max-width:1000px){
+  .burger{display:grid;place-items:center}
+  .sidebar{transform:translateX(-100%);box-shadow:var(--shadow-lg);width:min(320px,86vw)}
+  body.menu-open .sidebar{transform:none}
+  body.menu-open .scrim{display:block;position:fixed;inset:var(--topbar-h) 0 0 0;background:rgba(10,20,35,.45);z-index:40}
+  main{margin-left:0;padding:calc(var(--topbar-h) + 22px) 16px 32px}
+  .brand p{display:none}
+}
+@media (max-width:640px){
+  .topbar{padding:0 12px;gap:8px}
+  .brand-mark{display:none}
+  .brand h1{font-size:.78rem;white-space:normal;line-height:1.15;overflow-wrap:anywhere}
+  .brand{flex:0 1 104px}
+  .search{min-width:0;flex:1 1 120px;margin-left:0}
+  .search input{padding:0 34px 0 38px}
+  .search .ico{left:12px}
+  .btn-top span{display:none}
+  .btn-top{padding:0 13px}
+  .hero{padding:24px 20px}
+  .hero h2{font-size:1.5rem}
+  .page-head h2{font-size:1.4rem}
+  /* fluxo vertical no celular */
+  .flow{flex-direction:column}
+  .flow li{padding:0 0 30px;flex:none;min-width:0}
+  .flow li:last-child{padding-bottom:0}
+  .flow li:not(:last-child)::after{right:auto;left:50%;top:auto;bottom:4px;width:2px;height:20px;transform:translateX(-50%)}
+  .flow li:not(:last-child)::before{right:auto;left:50%;top:auto;bottom:0;border:6px solid transparent;border-top:9px solid var(--brand);border-bottom:0;transform:translateX(-50%)}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+@media print{
+  .topbar,.sidebar,.btn-top,.finder{display:none!important}
+  main{margin:0;padding:0}
+  .acc-panel{grid-template-rows:1fr!important}
+  .page[hidden]{display:none}
+}
+</style>
+</head>
+
+<body>
+<a class="skip" href="#conteudo">Ir para o conteúdo</a>
+
+<!-- ============ CABEÇALHO ============ -->
+<header class="topbar" role="banner">
+  <button class="burger" id="burger" aria-label="Abrir menu de navegação" aria-expanded="false" aria-controls="menu">☰</button>
+  <button class="brand" id="brand" aria-label="Guia de Processos Administrativos — ir para a página inicial">
+    <span class="brand-mark" aria-hidden="true">DSE</span>
+    <span>
+      <h1>Guia de Processos Administrativos</h1>
+      <p>Coordenação Administrativa</p>
+    </span>
+  </button>
+
+  <div class="search" role="search">
+    <span class="ico" aria-hidden="true">🔍</span>
+    <label for="q" class="sr-only">Pesquisar no portal</label>
+    <input id="q" type="search" autocomplete="off" placeholder="Pesquisar: nota, contrato, RPA, boleto…" aria-controls="results" aria-expanded="false">
+    <button class="clear" id="qclear" aria-label="Limpar pesquisa">✕</button>
+    <div class="results" id="results" aria-live="polite"></div>
+  </div>
+
+  <button class="btn-top" id="totop" aria-label="Voltar ao topo">↑ <span>Voltar ao Topo</span></button>
+</header>
+
+<!-- ============ MENU LATERAL (gerado pelo JavaScript a partir dos DADOS) ============ -->
+<nav class="sidebar" id="menu" aria-label="Navegação principal"></nav>
+<div class="scrim" id="scrim"></div>
+
+<!-- ============ ÁREA DE CONTEÚDO (as telas são montadas pelo JavaScript) ============ -->
+<main id="conteudo" tabindex="-1">
+  <noscript><div class="danger"><span class="ic">⚠️</span><div>Este portal precisa de JavaScript habilitado para funcionar.</div></div></noscript>
+</main>
+
+<script>
+/* ==========================================================================
+   A) CONFIG — versão do portal e referência do guia original
+   ========================================================================== */
+const PORTAL = {
+  versao: "1.0",
+  guiaData: "29/09/2026",
+  guiaNome: "Guia de Processos da Coordenação Administrativa DSE 2026 (versão revisada)",
+  canalChamado: "CitSmart > Coordenação Administrativa DSE"
+};
+
+/* ==========================================================================
+   B) DADOS — TODO o conteúdo do portal está aqui.
+   Formato dos blocos dentro de "acc" (accordions):
+     "texto"                → parágrafo           (aceita <b>negrito</b>)
+     { h:"Subtítulo" }      → subtítulo interno
+     { ul:["a","b"] }       → lista
+     { note:"texto" }       → destaque azul (informação)
+     { warn:"texto" }       → destaque amarelo (atenção)
+     { danger:"texto" }     → destaque vermelho (importante)
+   ========================================================================== */
+
+/* ---- B1. PROCESSOS (cada item vira: item de menu + card na página inicial + página própria) ---- */
+const PROCESSOS = [
+  {
+    id:"nf", menu:"Pagamento de Nota Fiscal e Boleto", card:"Pagamento NF", icon:"🧾", c:"#0f4c81", cl:"#e7f0f9",
+    keys:"nota fiscal nf boleto pagamento cedente cessão de crédito aceite entrega exceção citsmart chamado",
+    curto:"Pagar nota fiscal ou boleto de bem entregue ou serviço executado.",
+    resumo:"Orienta o envio de notas fiscais e boletos para pagamento. A Coordenação Administrativa DSE analisa e encaminha; o pagamento é feito pelas áreas corporativas, conforme calendários e políticas financeiras.",
+    quando:[
+      "Há uma nota fiscal ou boleto de bem entregue ou serviço já executado e aceito.",
+      "É preciso pagar fornecedor com contrato ou ordem de compra vinculada.",
+      "Surgiu uma situação fora do padrão (exceção): fornecedor sem cadastro, boleto vencido, nota incorreta, entre outras."
+    ],
+    docsTitulo:"Documentos necessários",
+    docs:["Nota fiscal em PDF","Boleto (quando houver)","Contrato ou ordem de compra","Evidência de aceite da entrega","Aprovações necessárias","Justificativas de exceção (quando aplicáveis)"],
+    fluxo:[
+      {t:"Entrega e aceite", d:"A área solicitante confirma que o bem foi entregue ou o serviço executado e que houve aceite. <b>O recebimento da nota fiscal não substitui a validação da entrega.</b>"},
+      {t:"Abertura do chamado", d:"Acesse <b>CitSmart > Coordenação Administrativa DSE > Tema “Pagamento de Nota Fiscal e Boleto”</b> e preencha todas as informações."},
+      {t:"Análise administrativa", d:"A Coordenação Administrativa DSE confere preenchimento, documentação obrigatória, vínculos contratuais e aderência ao fluxo. Havendo pendências, o chamado volta para complementação."},
+      {t:"Encaminhamento", d:"Estando adequado, o processo é encaminhado às áreas corporativas competentes (fiscal, financeiro etc.)."},
+      {t:"Pagamento", d:"O pagamento segue os calendários e políticas financeiras. O retorno recebido (previsão, pendências, orientações) deve ser registrado no chamado sempre que possível."}
+    ],
+    acionar:[
+      ["Consulta orçamentária e análise do chamado","Coordenação Administrativa DSE"],
+      ["Confirmar entrega, aceite e conformidade da nota","Área solicitante"],
+      ["Contrato ou ordem de compra","Suprimentos"],
+      ["Dúvida jurídica / contratual","GEJUR"],
+      ["Pagamento e previsão de data","Contas a Pagar (Financeiro)"]
+    ],
+    acc:[
+      {t:"Como abrir o chamado", b:[
+        "Acesse <b>CitSmart &gt; Coordenação Administrativa DSE &gt; Tema “Pagamento de Nota Fiscal e Boleto”</b>.",
+        {h:"Informações que devem constar no chamado"},
+        {ul:["Fornecedor","CNPJ","Objeto da contratação","Número da nota fiscal","Data de emissão","Valor","Vencimento","Centro de responsabilidade (CR)","Ordem de compra ou contrato vinculado, quando aplicável"]}
+      ]},
+      {t:"Antes de solicitar o pagamento: o que a área solicitante precisa validar", b:[
+        "O solicitante deve confirmar que o bem foi entregue, o serviço foi executado e a área responsável realizou o aceite. Também precisa validar:",
+        {ul:["Conformidade do documento fiscal","Valores","Quantidades","Datas","Escopo contratado"]},
+        {danger:"Divergências devem ser regularizadas <b>antes</b> do encaminhamento. O recebimento da nota fiscal não substitui a validação da entrega."}
+      ]},
+      {t:"O que a Coordenação Administrativa DSE confere na análise", b:[
+        {ul:["Preenchimento adequado do chamado","Documentação obrigatória","Vínculos contratuais","Aderência ao fluxo institucional"]},
+        "Em caso de pendências, o chamado é devolvido para complementação. Quando estiver adequado, é encaminhado às áreas competentes."
+      ]},
+      {t:"Documento fiscal e prazo de pagamento", b:[
+        "Os documentos fiscais devem ser encaminhados <b>o mais rapidamente possível</b> após o recebimento.",
+        "Os pagamentos seguem os calendários, políticas financeiras e prazos operacionais definidos institucionalmente.",
+        {warn:"O recebimento da documentação pela Coordenação Administrativa DSE não caracteriza compromisso de pagamento em data específica. Pedidos excepcionais dependem de análise das áreas competentes."}
+      ]},
+      {t:"Boleto e cessão de crédito", b:[
+        "Quando houver boleto:",
+        {ul:["Conferir o cedente","Verificar a relação do cedente com o fornecedor contratado","Validar documentação complementar em casos de cessão de crédito"]},
+        "Divergências devem ser esclarecidas antes do envio."
+      ]},
+      {t:"Conclusão do chamado e retorno", b:[
+        "A conclusão do chamado ocorre após o registro do encaminhamento administrativo realizado.",
+        "O pagamento, a rejeição, o cancelamento ou a necessidade de correção dependem das análises das áreas corporativas responsáveis.",
+        "Sempre que possível, registre o retorno recebido, incluindo:",
+        {ul:["Previsão de pagamento","Pendências","Orientações adicionais"]}
+      ]},
+      {t:"Tratamento de exceções (fora do fluxo padrão)", b:[
+        "Algumas solicitações exigem tratamento diferenciado. Exemplos:",
+        {ul:["Fornecedor sem cadastro","Dados bancários divergentes","Ausência de ordem de compra","Ausência de contrato obrigatório","Nota fiscal incorreta","Boleto vencido","Pagamento fora de prazo","Reclassificação financeira","Divergência entre contratação e faturamento"]},
+        "Nessas situações, a Coordenação Administrativa DSE orienta a área demandante quanto às regularizações necessárias e realiza os encaminhamentos cabíveis.",
+        {warn:"Demandas classificadas como exceção <b>não têm garantia de atendimento dentro dos prazos usuais</b> e dependem da análise das áreas corporativas envolvidas."}
+      ]}
+    ],
+    proximo:"Confirme a entrega e o aceite, reúna os documentos do checklist e abra o chamado no CitSmart (Coordenação Administrativa DSE > Pagamento de Nota Fiscal e Boleto)."
+  },
+
+  {
+    id:"rpa", menu:"Pagamento por RPA", card:"RPA", icon:"👤", c:"#6b4fbb", cl:"#efeafb",
+    keys:"rpa recibo pagamento autônomo autonomo pessoa física cpf subordinação habitualidade pessoalidade vínculo empregatício",
+    curto:"Pagar prestador pessoa física autônomo (Recibo de Pagamento Autônomo).",
+    resumo:"Orienta a contratação e o pagamento de pessoa física que presta serviço de forma autônoma. Antes de iniciar, é preciso avaliar se o serviço é realmente compatível com trabalho autônomo.",
+    quando:[
+      "O serviço tem características de trabalho autônomo, executado por pessoa física.",
+      "Há descrição clara da atividade, escopo e período de execução.",
+      "Há justificativa para utilizar a modalidade RPA."
+    ],
+    docsTitulo:"Documentação obrigatória",
+    docs:["Documento oficial","CPF","Comprovante de residência","Dados bancários","Documentos profissionais, quando exigíveis","Documentos complementares solicitados pelas áreas responsáveis"],
+    fluxo:[
+      {t:"Avaliar a modalidade", d:"Antes de iniciar, verifique se o serviço é compatível com trabalho autônomo. Havendo indício de subordinação, habitualidade, pessoalidade ou vínculo empregatício, submeta ao Jurídico."},
+      {t:"Abertura do chamado", d:"Informe nome completo, CPF, descrição da atividade, escopo, período de execução, valor estimado e a justificativa para o uso de RPA."},
+      {t:"Documentação", d:"Anexe a documentação obrigatória e os documentos complementares que as áreas responsáveis solicitarem."},
+      {t:"Análise e fluxo corporativo", d:"Atuam em conjunto: Jurídico, Cadastro, Compras, Financeiro, Fiscal e Folha de Pagamento."},
+      {t:"Pagamento", d:"Após a conclusão do fluxo corporativo, o pagamento é processado pelas áreas competentes."}
+    ],
+    acionar:[
+      ["Encaminhamento e análise administrativa","Coordenação Administrativa DSE"],
+      ["Indício de vínculo (subordinação, habitualidade, pessoalidade)","GEJUR (Jurídico)"],
+      ["Cadastro do prestador","Cadastro"],
+      ["Pagamento","Financeiro"],
+      ["Tributos e retenções","Fiscal / Folha de Pagamento"]
+    ],
+    acc:[
+      {t:"O que informar no chamado", b:[
+        {ul:["Nome completo","CPF","Descrição da atividade","Escopo do trabalho","Período de execução","Valor estimado","Justificativa para utilização da modalidade RPA"]}
+      ]},
+      {t:"Quando NÃO usar RPA", b:[
+        "Antes do início da contratação, avalie se o serviço tem características compatíveis com trabalho autônomo. <b>Não utilize RPA</b> quando houver indícios de:",
+        {ul:["Subordinação","Habitualidade","Pessoalidade","Vínculo empregatício"]},
+        {danger:"Nesses casos, o processo deve ser submetido à análise do Jurídico."}
+      ]},
+      {t:"Fluxo corporativo do RPA", b:[
+        "O processamento depende da atuação conjunta das áreas de:",
+        {ul:["Jurídico","Cadastro","Compras","Financeiro","Fiscal","Folha de Pagamento"]},
+        {warn:"Enquanto não houver homologação definitiva do fluxo corporativo, esta seção tem <b>caráter orientativo</b>."}
+      ]}
+    ],
+    proximo:"Avalie primeiro se o serviço é de fato autônomo. Se for, reúna a documentação do checklist e abra o chamado; em caso de dúvida sobre vínculo, consulte o Jurídico antes de iniciar."
+  },
+
+  {
+    id:"contrato", menu:"Novo Contrato", card:"Novo Contrato", icon:"📄", c:"#0e7c86", cl:"#e1f4f5",
+    keys:"contrato novo contrato contratação contratar vigência assinatura minuta jurídico suprimentos fornecedor escopo",
+    curto:"Formalizar a contratação de um fornecedor ou serviço.",
+    resumo:"Orienta a abertura de demanda para formalizar um novo contrato. A área solicitante define escopo e negociação; o Jurídico formaliza; Suprimentos conduz a aquisição; a Coordenação Administrativa DSE encaminha.",
+    quando:[
+      "Será contratado um fornecedor ou serviço que exige instrumento contratual.",
+      "É necessário formalizar escopo, vigência, valor e cronograma por contrato.",
+      "O pagamento futuro dependerá de contrato vigente."
+    ],
+    docsTitulo:"Informações e documentos para o chamado",
+    docs:["Área demandante e responsável","Centro de resultado","Fornecedor","Objeto e escopo","Vigência","Valor","Cronograma","Justificativa"],
+    fluxo:[
+      {t:"Necessidade", d:"A área solicitante define escopo, entregas, cronograma, negociação e validações técnicas."},
+      {t:"Abertura do chamado", d:"Preencha área demandante, centro de resultado, responsável, fornecedor, objeto, escopo, vigência, valor, cronograma e justificativa."},
+      {t:"Encaminhamento", d:"A Coordenação Administrativa DSE faz o encaminhamento administrativo; Suprimentos conduz os processos de aquisição aplicáveis."},
+      {t:"Análise e minuta", d:"O Jurídico realiza a análise e a formalização contratual."},
+      {t:"Assinatura formal", d:"O contrato só é considerado vigente com a assinatura formal das partes competentes."}
+    ],
+    acionar:[
+      ["Consulta orçamentária e encaminhamento","Coordenação Administrativa DSE"],
+      ["Processo de aquisição / contratação","Suprimentos"],
+      ["Análise e formalização contratual","GEJUR (Jurídico)"],
+      ["Escopo, entregas, cronograma e negociação","Área solicitante"]
+    ],
+    acc:[
+      {t:"O que informar no chamado", b:[
+        {ul:["Área demandante","Centro de resultado","Responsável","Fornecedor","Objeto","Escopo","Vigência","Valor","Cronograma","Justificativa"]}
+      ]},
+      {t:"Quem é responsável por quê", b:[
+        {h:"Área solicitante"},{ul:["Escopo","Entregas","Cronograma","Negociação","Validações técnicas"]},
+        {h:"Coordenação Administrativa DSE"},"Encaminhamento administrativo.",
+        {h:"Jurídico"},"Análise e formalização contratual.",
+        {h:"Suprimentos"},"Conduz os processos de aquisição aplicáveis."
+      ]},
+      {t:"Formalização: quando o contrato passa a valer", b:[
+        {danger:"Nenhum contrato é considerado vigente sem a assinatura formal das partes competentes. Minutas, e-mails e aprovações preliminares <b>não substituem</b> o instrumento contratual assinado."}
+      ]}
+    ],
+    proximo:"Reúna escopo, valor, vigência e cronograma com a área solicitante e abra o chamado. Não inicie o serviço antes da assinatura formal do contrato."
+  },
+
+  {
+    id:"aditivo", menu:"Aditivo Contratual", card:"Aditivo", icon:"📝", c:"#b25e00", cl:"#fdf0e0",
+    keys:"aditivo contratual contrato alteração prazo valor escopo prorrogação vigência impacto financeiro alçada",
+    curto:"Alterar prazo, valor ou escopo de um contrato vigente.",
+    resumo:"Orienta a alteração de contratos já vigentes. Somente o aditivo assinado altera formalmente as condições contratuais.",
+    quando:[
+      "É preciso alterar o prazo de um contrato vigente.",
+      "É preciso alterar o valor contratado.",
+      "É preciso alterar o escopo — ou uma combinação dos itens anteriores."
+    ],
+    docsTitulo:"Informações e documentos para o chamado",
+    docs:["Contrato vigente","Fornecedor","Vigência atual","Tipo de alteração (prazo, valor, escopo)","Justificativa","Impacto financeiro"],
+    fluxo:[
+      {t:"Identificar a alteração", d:"Defina se a mudança envolve prazo, valor, escopo ou uma combinação."},
+      {t:"Abertura do chamado", d:"Informe contrato vigente, fornecedor, vigência atual, tipo de alteração, justificativa e impacto financeiro."},
+      {t:"Aprovações", d:"Observe orçamento, alçadas, aprovações institucionais e regras corporativas de contratação."},
+      {t:"Formalização", d:"O Jurídico formaliza o aditivo."},
+      {t:"Aditivo assinado", d:"Somente o aditivo assinado altera formalmente as condições do contrato."}
+    ],
+    acionar:[
+      ["Consulta orçamentária e encaminhamento","Coordenação Administrativa DSE"],
+      ["Regras de contratação","Suprimentos"],
+      ["Formalização do aditivo","GEJUR (Jurídico)"]
+    ],
+    acc:[
+      {t:"O que informar no chamado", b:[
+        {ul:["Contrato vigente","Fornecedor","Vigência atual","Tipo de alteração","Justificativa","Impacto financeiro"]}
+      ]},
+      {t:"Que tipo de alteração é?", b:[
+        "Informe se a alteração envolve:",
+        {ul:["Prazo","Valor","Escopo","Combinação dos itens anteriores"]}
+      ]},
+      {t:"Aprovações necessárias", b:[
+        "A demanda deve observar:",
+        {ul:["Orçamento","Alçadas","Aprovações institucionais","Regras corporativas de contratação"]}
+      ]},
+      {t:"Formalização: quando o aditivo vale", b:[
+        {danger:"Somente o aditivo <b>assinado</b> altera formalmente as condições contratuais. Aprovação por e-mail ou minuta em circulação não produz efeitos contratuais."}
+      ]}
+    ],
+    proximo:"Identifique o tipo de alteração e o impacto financeiro, confirme as alçadas e abra o chamado. Aguarde o aditivo assinado antes de executar a mudança."
+  },
+
+  {
+    id:"compras", menu:"Aquisição de Bens e Serviços", card:"Compras", icon:"🛒", c:"#1f7a3d", cl:"#e3f5e8",
+    keys:"compras aquisição aquisicao bens serviços servicos cotação requisição orçamento alçada eventos formações tecnologia software licença plataforma nuvem",
+    curto:"Comprar bens e contratar serviços, inclusive eventos e tecnologia.",
+    resumo:"Orienta a aquisição de bens e serviços, com regras específicas para eventos/formações e para contratações de tecnologia. O pagamento só é solicitado após entrega e aceite.",
+    quando:[
+      "A área precisa adquirir bens ou contratar serviços.",
+      "Haverá evento, formação, seminário, congresso, gravação, transmissão, live ou produção educacional.",
+      "Haverá aquisição de software, plataforma, licença, sistema, serviço em nuvem ou integração."
+    ],
+    docsTitulo:"Condições e documentos antes da compra",
+    docs:["Orçamento disponível","Aprovação da alçada aplicável","Requisição formal, quando exigida","Especificação técnica do que será adquirido","Justificativa (e justificativa de exceção documentada, se houver)"],
+    fluxo:[
+      {t:"Requisição", d:"Antes da compra deve existir orçamento disponível, aprovação da alçada aplicável e requisição formal quando exigida."},
+      {t:"Abertura do chamado", d:"Informe objeto, quantidade, especificação técnica, justificativa, valor estimado, área solicitante e local de entrega."},
+      {t:"Cotação", d:"A aquisição observa as diretrizes institucionais de compras e suprimentos. Exceções devem ser justificadas por escrito."},
+      {t:"Contratação", d:"Suprimentos conduz o processo. Para tecnologia, é necessária avaliação prévia das áreas técnicas."},
+      {t:"Entrega e aceite", d:"Somente após a confirmação da entrega e do aceite o pagamento deve ser solicitado."}
+    ],
+    acionar:[
+      ["Consulta orçamentária e encaminhamento","Coordenação Administrativa DSE"],
+      ["Cotação e condução da compra","Suprimentos"],
+      ["Contrato, direitos de imagem, autorais e proteção de dados","GEJUR (Jurídico)"],
+      ["Software, plataformas e sistemas","Áreas técnicas responsáveis (Tecnologia)"],
+      ["Pagamento após aceite","Contas a Pagar (Financeiro)"]
+    ],
+    acc:[
+      {t:"O que informar no chamado", b:[
+        {ul:["Objeto","Quantidade","Especificação técnica","Justificativa","Valor estimado","Área solicitante","Local de entrega"]}
+      ]},
+      {t:"Requisição, cotação, entrega e aceite", b:[
+        {h:"Requisição"},"Antes da compra deve existir:",
+        {ul:["Orçamento disponível","Aprovação da alçada aplicável","Requisição formal quando exigida"]},
+        {h:"Cotação"},"As aquisições devem observar as diretrizes institucionais de compras e suprimentos. As justificativas para exceção devem ser documentadas.",
+        {h:"Entrega e aceite"},
+        {danger:"O pagamento somente deve ser solicitado após a confirmação da entrega e do aceite da contratação."}
+      ]},
+      {t:"Contratações para eventos e formações", b:[
+        "Vale para eventos, formações, seminários, congressos, gravações, transmissões, lives e produções educacionais. Informe:",
+        {ul:["Nome do projeto ou evento","Período de realização","Público atendido","Escopo contratado","Entregáveis","Área responsável"]},
+        "Quando aplicável, observe as exigências relacionadas a:",
+        {ul:["Uso de imagem","Propriedade intelectual","Direitos autorais","Proteção de dados","Confidencialidade"]}
+      ]},
+      {t:"Contratações de tecnologia", b:[
+        "Aquisições de softwares, plataformas, licenças, sistemas, serviços em nuvem, integrações e soluções digitais devem ser submetidas <b>previamente</b> às avaliações das áreas técnicas responsáveis.",
+        {warn:"O processo só prossegue após a manifestação das áreas competentes, quando exigido institucionalmente."}
+      ]}
+    ],
+    proximo:"Confirme orçamento e alçada, descreva claramente o que será adquirido e abra o chamado. Se for tecnologia, busque a avaliação técnica antes de qualquer contratação."
+  },
+
+  {
+    id:"reclass", menu:"Reclassificações", card:"Reclassificação", icon:"🔁", c:"#a3265b", cl:"#fbe8f0", extra:"reclass",
+    keys:"reclassificação reclassificacao reclassificar origem destino centro de custo centro de resultado cr filial justificativa natureza da despesa classificação orçamentária",
+    curto:"Corrigir centro de resultado, natureza da despesa ou classificação.",
+    resumo:"Usada para corrigir classificações financeiras e orçamentárias. A Coordenação Administrativa DSE orienta, analisa administrativamente e encaminha; os ajustes são executados pela área competente.",
+    quando:[
+      "É preciso corrigir o centro de resultado.",
+      "É preciso corrigir a natureza da despesa.",
+      "É preciso corrigir a classificação orçamentária ou vinculações financeiras."
+    ],
+    docsTitulo:"Documentação obrigatória",
+    docs:["Justificativa","Classificação atual (origem)","Classificação pretendida (destino)","Documentos de suporte","Identificação das áreas envolvidas"],
+    fluxo:[
+      {t:"Identificar o ajuste", d:"Verifique o que precisa ser corrigido: centro de resultado, natureza da despesa, classificação orçamentária ou vinculação financeira."},
+      {t:"Abertura do chamado", d:"Informe origem (classificação atual), destino (classificação pretendida), centro de custo/resultado, CR, filial e justificativa, com documentos de suporte."},
+      {t:"Análise administrativa", d:"A Coordenação Administrativa DSE analisa administrativamente a solicitação."},
+      {t:"Encaminhamento", d:"A solicitação é encaminhada à área competente para executar os ajustes necessários."},
+      {t:"Retorno", d:"A área competente executa o ajuste e dá o retorno. Registre-o no chamado."}
+    ],
+    acionar:[
+      ["Orientação, análise administrativa e encaminhamento","Coordenação Administrativa DSE"],
+      ["Aprovação e execução do ajuste contábil","Contabilidade (área competente)"],
+      ["Justificativa e documentos de suporte","Área solicitante"]
+    ],
+    alerta:"A Coordenação Administrativa DSE orienta e encaminha o processo, mas não realiza aprovações contábeis.",
+    acc:[
+      {t:"Quando utilizar a reclassificação", b:[
+        "Utilize quando houver necessidade de corrigir:",
+        {ul:["Centro de resultado","Natureza da despesa","Classificação orçamentária","Vinculações financeiras"]}
+      ]},
+      {t:"Documentação obrigatória", b:[
+        {ul:["Justificativa","Classificação atual","Classificação pretendida","Documentos de suporte","Identificação das áreas envolvidas"]}
+      ]},
+      {t:"Encaminhamento", b:[
+        "A Coordenação Administrativa DSE realiza a análise administrativa e encaminha a solicitação para a área competente executar os ajustes necessários.",
+        {danger:"A aprovação da Coordenação Administrativa DSE autoriza apenas o encaminhamento: <b>não é aprovação contábil, financeira, fiscal ou jurídica</b>."}
+      ]},
+      {t:"Reclassificação como exceção em pagamentos", b:[
+        "Quando surgir no pagamento de nota fiscal ou boleto, a reclassificação financeira é tratada como exceção. Nesse caso, não há garantia de atendimento nos prazos usuais, pois depende das áreas corporativas."
+      ]}
+    ],
+    proximo:"Preencha o apoio abaixo (origem, destino, CC/CR, filial e justificativa), copie o resumo para o chamado e anexe os documentos de suporte."
+  },
+
+  {
+    id:"regular", menu:"Regularizações", card:"Regularização", icon:"🏷️", c:"#3b5bdb", cl:"#e8edff",
+    keys:"regularização regularizacao cadastral fornecedor cadastro dados bancários razão social cnpj correção documental",
+    curto:"Cadastrar ou corrigir dados de fornecedores.",
+    resumo:"Regularização cadastral de fornecedores. A Coordenação Administrativa DSE faz a conferência preliminar; a efetivação depende da validação das áreas corporativas.",
+    quando:[
+      "Novo cadastro de fornecedor.",
+      "Alteração de dados bancários, razão social ou CNPJ.",
+      "Correções cadastrais e regularização documental."
+    ],
+    docsTitulo:"O que reunir (orientativo)",
+    docs:["Identificação do fornecedor (razão social e CNPJ)","Documentos que comprovem o dado a cadastrar ou alterar","Descrição do que precisa ser corrigido e o motivo"],
+    fluxo:[
+      {t:"Identificar a necessidade", d:"Novo cadastro, alteração de dados bancários, razão social, CNPJ, correção cadastral ou regularização documental."},
+      {t:"Abertura do chamado", d:"Descreva a necessidade e anexe a documentação do fornecedor."},
+      {t:"Conferência preliminar", d:"A Coordenação Administrativa DSE realiza a conferência preliminar da documentação."},
+      {t:"Validação corporativa", d:"As áreas corporativas responsáveis validam e processam as alterações."},
+      {t:"Cadastro efetivado", d:"A efetivação das alterações depende dessa validação e do processamento."}
+    ],
+    acionar:[
+      ["Conferência preliminar da documentação","Coordenação Administrativa DSE"],
+      ["Validação e processamento do cadastro","Áreas corporativas responsáveis (Cadastro)"],
+      ["Pagamento pendente por cadastro","Contas a Pagar (Financeiro)"]
+    ],
+    acc:[
+      {t:"Quando utilizar", b:[
+        "Este processo deve ser utilizado para:",
+        {ul:["Novo cadastro","Alteração de dados bancários","Atualização de razão social","Alteração de CNPJ","Correções cadastrais","Regularização documental"]}
+      ]},
+      {t:"Como funciona o fluxo", b:[
+        "A Coordenação Administrativa DSE realiza a conferência preliminar da documentação.",
+        {warn:"A efetivação das alterações depende da validação e do processamento pelas áreas corporativas responsáveis."}
+      ]},
+      {t:"Ligação com pagamentos", b:[
+        "Fornecedor sem cadastro e dados bancários divergentes são exceções no pagamento de nota fiscal. Regularize o cadastro para destravar o pagamento, lembrando que exceções não têm garantia de prazo."
+      ]}
+    ],
+    proximo:"Abra o chamado descrevendo o que precisa ser cadastrado ou corrigido e anexe a documentação do fornecedor."
+  },
+
+  {
+    id:"captacao", menu:"Captação de Recursos", card:"Captação", icon:"🤝", c:"#c2410c", cl:"#fdeadf",
+    keys:"captação captacao recursos concedente projeto contrapartida modalidade prestação de contas rastreabilidade projetos sociais convênio",
+    curto:"Registrar e encaminhar oportunidades de captação de recursos.",
+    resumo:"A Coordenação Administrativa DSE é o ponto de registro, organização documental e encaminhamento. A análise técnica e estratégica é de Projetos Sociais e Captação de Recursos.",
+    quando:[
+      "Há uma oportunidade de recursos de um concedente para um projeto.",
+      "É preciso registrar e organizar a documentação da oportunidade.",
+      "Há projeto em andamento que exige prestação de contas e rastreabilidade das despesas."
+    ],
+    docsTitulo:"Informações e documentos para o chamado",
+    docs:["Concedente","Projeto","Valor estimado","Modalidade","Prazo","Contrapartidas","Documentação disponível"],
+    fluxo:[
+      {t:"Oportunidade", d:"Identifique concedente, projeto, valor estimado, modalidade, prazo e contrapartidas."},
+      {t:"Abertura do chamado", d:"Registre a oportunidade e anexe a documentação disponível."},
+      {t:"Registro e organização", d:"A Coordenação Administrativa DSE registra, organiza a documentação e encaminha."},
+      {t:"Análise técnica", d:"Projetos Sociais e Captação de Recursos faz a análise técnica e estratégica da oportunidade."},
+      {t:"Formalização e prestação de contas", d:"Instrumentos que gerem obrigações passam por análises institucionais antes da assinatura. Despesas, contratos, compras e pagamentos do projeto precisam de rastreabilidade documental."}
+    ],
+    acionar:[
+      ["Registro, organização documental e encaminhamento","Coordenação Administrativa DSE"],
+      ["Análise técnica e estratégica da oportunidade","Projetos Sociais e Captação de Recursos"],
+      ["Análise de instrumentos que geram obrigações","Áreas institucionais aplicáveis (ex.: GEJUR)"]
+    ],
+    acc:[
+      {t:"O que informar no chamado", b:[
+        {ul:["Concedente","Projeto","Valor estimado","Modalidade","Prazo","Contrapartidas","Documentação disponível"]}
+      ]},
+      {t:"Responsabilidades", b:[
+        "A Coordenação Administrativa DSE atua como ponto de registro, organização documental e encaminhamento.",
+        "A análise técnica e estratégica da oportunidade cabe à área de Projetos Sociais e Captação de Recursos."
+      ]},
+      {t:"Formalização", b:[
+        {danger:"Qualquer instrumento que gere obrigações deve ser submetido às análises institucionais aplicáveis <b>antes da assinatura</b>."}
+      ]},
+      {t:"Prestação de contas", b:[
+        "Todas as despesas, contratos, compras e pagamentos vinculados ao projeto devem possuir rastreabilidade documental adequada."
+      ]}
+    ],
+    proximo:"Reúna as informações da oportunidade e abra o chamado. Não assine instrumentos que gerem obrigações antes das análises institucionais."
+  }
+];
+
+/* ---- B2. APRESENTAÇÃO ---- */
+const APRESENTACAO = {
+  resumo:"Este guia orienta as áreas da Diretoria Socioeducacional (DSE) quanto ao correto encaminhamento das demandas administrativas relacionadas a pagamentos, contratações, aquisições, reclassificações, regularizações cadastrais e captação de recursos.",
+  objetivos:["Padronizar os processos","Reduzir retrabalho","Assegurar conformidade com as políticas institucionais","Melhorar a comunicação entre as áreas envolvidas"],
+  papel:"A Coordenação Administrativa DSE atua como área de apoio, orientação, organização documental, análise administrativa e encaminhamento dos processos da Diretoria Socioeducacional.",
+  faz:["Orienta as áreas sobre o fluxo correto","Organiza a documentação","Realiza a análise administrativa","Encaminha às áreas competentes","Devolve o chamado quando há pendências"],
+  naoFaz:["Não substitui as validações técnicas, jurídicas, fiscais, financeiras, contábeis ou de suprimentos","Não aprova financeira, contábil, fiscal, contratual ou juridicamente a solicitação","Não garante pagamento em data específica","Não decide sobre pagamentos, contratos, compras, cadastro de fornecedores ou registro contábil"],
+  aviso:"A aprovação da Coordenação Administrativa DSE autoriza o encaminhamento administrativo da demanda, mas não representa aprovação financeira, contábil, fiscal, contratual ou jurídica da solicitação. As deliberações finais permanecem sob responsabilidade das áreas especializadas.",
+  finais:[
+    "Este guia tem caráter orientativo e busca padronizar o encaminhamento administrativo das principais demandas da Diretoria Socioeducacional.",
+    "Políticas institucionais, normativos corporativos e orientações das áreas especializadas prevalecem sobre as instruções aqui previstas.",
+    "Situações não contempladas deverão ser analisadas conjuntamente pelas áreas competentes, observando os princípios de conformidade, governança, transparência, responsabilidade e controle institucional."
+  ]
+};
+
+/* ---- B3. FAQ (cat: agrupa nos filtros; r: resposta, aceita HTML simples) ---- */
+const FAQ = [
+  {cat:"Pagamentos", q:"Posso enviar somente o boleto?", r:"Não. O boleto acompanha a nota fiscal em PDF, o contrato ou ordem de compra, a evidência de aceite e as aprovações necessárias. Além disso, é preciso conferir o cedente do boleto."},
+  {cat:"Pagamentos", q:"Preciso de contrato para este pagamento?", r:"Anexe o contrato ou a ordem de compra vinculada, quando aplicável. A <b>ausência de contrato obrigatório</b> é tratada como exceção: a Coordenação orienta as regularizações, mas não há garantia de prazo."},
+  {cat:"Pagamentos", q:"Quem aprova o orçamento?", r:"A aprovação segue as alçadas e regras institucionais aplicáveis. A Coordenação Administrativa DSE apoia na consulta orçamentária, mas sua aprovação autoriza apenas o encaminhamento administrativo, não a aprovação financeira."},
+  {cat:"Pagamentos", q:"Quem valida a nota fiscal?", r:"A <b>área solicitante</b> valida entrega, conformidade do documento fiscal, valores, quantidades, datas e escopo. A Coordenação confere preenchimento, documentação e vínculos contratuais; os aspectos fiscais e financeiros ficam com as áreas corporativas."},
+  {cat:"Pagamentos", q:"Receber a nota fiscal já significa que posso pedir o pagamento?", r:"Não. O recebimento da nota fiscal não substitui a validação da entrega. O pagamento só deve ser solicitado após a confirmação da entrega e do aceite."},
+  {cat:"Pagamentos", q:"Qual é o prazo para o pagamento?", r:"Os pagamentos seguem calendários, políticas financeiras e prazos operacionais institucionais. O recebimento da documentação pela Coordenação não caracteriza compromisso de pagamento em data específica. Envie os documentos fiscais o mais rápido possível."},
+  {cat:"Pagamentos", q:"O boleto está vencido. O que fazer?", r:"Boleto vencido é uma <b>exceção</b>. Abra o chamado explicando a situação; a Coordenação orienta as regularizações e encaminha, mas não há garantia de atendimento nos prazos usuais."},
+  {cat:"Pagamentos", q:"O cedente do boleto é diferente do fornecedor. E agora?", r:"Confira o cedente e a relação dele com o fornecedor contratado. Em casos de cessão de crédito, é necessária documentação complementar. Esclareça a divergência antes do envio."},
+  {cat:"Pagamentos", q:"Meu chamado foi devolvido. O que significa?", r:"Significa que há pendências (preenchimento, documentos, vínculo contratual ou aderência ao fluxo). Complemente as informações no próprio chamado para que ele siga."},
+  {cat:"Pagamentos", q:"Quando o chamado é considerado concluído?", r:"Após o registro do encaminhamento administrativo realizado. O pagamento, a rejeição, o cancelamento ou a correção dependem das áreas corporativas. Sempre que possível, registre o retorno recebido (previsão, pendências, orientações)."},
+  {cat:"Pagamentos", q:"Posso pedir pagamento antes da entrega do serviço?", r:"Não. É preciso confirmar entrega/execução e o aceite pela área responsável antes de solicitar o pagamento."},
+  {cat:"RPA", q:"Quando usar RPA?", r:"Quando o serviço tiver características de trabalho autônomo prestado por pessoa física. Não use RPA se houver indícios de subordinação, habitualidade, pessoalidade ou vínculo empregatício; nesses casos, consulte o Jurídico."},
+  {cat:"RPA", q:"O processo de RPA já está totalmente homologado?", r:"Ainda não. Enquanto não houver homologação definitiva do fluxo corporativo, a seção de RPA tem caráter orientativo."},
+  {cat:"RPA", q:"Quais documentos do prestador são exigidos no RPA?", r:"Documento oficial, CPF, comprovante de residência, dados bancários, documentos profissionais quando exigíveis e outros que as áreas responsáveis solicitarem."},
+  {cat:"Contratos", q:"Um e-mail de aprovação vale como contrato?", r:"Não. Nenhum contrato é considerado vigente sem a assinatura formal das partes competentes. Minutas, e-mails e aprovações preliminares não substituem o instrumento assinado."},
+  {cat:"Contratos", q:"Posso iniciar o serviço enquanto a minuta circula?", r:"O contrato só é vigente após a assinatura formal. Minutas e aprovações preliminares não produzem efeito contratual; aguarde a formalização."},
+  {cat:"Contratos", q:"Quando preciso de um aditivo?", r:"Quando for alterar um contrato vigente em prazo, valor, escopo ou uma combinação desses itens. Informe o tipo de alteração, a justificativa e o impacto financeiro."},
+  {cat:"Contratos", q:"O aditivo aprovado por e-mail já vale?", r:"Não. Somente o aditivo assinado altera formalmente as condições contratuais. Aprovação por e-mail ou minuta em circulação não produz efeitos."},
+  {cat:"Compras", q:"O que preciso ter antes de fazer uma compra?", r:"Orçamento disponível, aprovação da alçada aplicável e requisição formal, quando exigida. Exceções à cotação devem ter justificativa documentada."},
+  {cat:"Compras", q:"Quero contratar um software ou plataforma. Como proceder?", r:"Submeta previamente a demanda às áreas técnicas responsáveis. O processo só prossegue após a manifestação das áreas competentes, quando exigido institucionalmente."},
+  {cat:"Compras", q:"O que informar ao contratar um evento ou formação?", r:"Nome do projeto/evento, período, público atendido, escopo contratado, entregáveis e área responsável. Quando aplicável, observe uso de imagem, propriedade intelectual, direitos autorais, proteção de dados e confidencialidade."},
+  {cat:"Reclassificação", q:"Como solicitar reclassificação?", r:"Abra o chamado com a classificação atual (origem), a pretendida (destino), a justificativa, os documentos de suporte e as áreas envolvidas. A Coordenação analisa administrativamente e encaminha à área competente para executar o ajuste."},
+  {cat:"Reclassificação", q:"A Coordenação Administrativa aprova a reclassificação?", r:"Não. Ela orienta e encaminha, mas <b>não realiza aprovações contábeis</b>. A execução do ajuste é da área competente."},
+  {cat:"Cadastro", q:"O fornecedor não tem cadastro. O que fazer?", r:"Abra a regularização cadastral (novo cadastro). A Coordenação faz a conferência preliminar da documentação e as áreas corporativas validam e processam. Sem cadastro, o pagamento é tratado como exceção."},
+  {cat:"Cadastro", q:"Os dados bancários do fornecedor estão divergentes.", r:"Utilize o processo de regularização cadastral (alteração de dados bancários). A efetivação depende da validação das áreas corporativas."},
+  {cat:"Captação", q:"Quem analisa uma oportunidade de captação?", r:"A área de Projetos Sociais e Captação de Recursos faz a análise técnica e estratégica. A Coordenação Administrativa DSE registra, organiza a documentação e encaminha."},
+  {cat:"Captação", q:"Posso assinar um instrumento de captação por conta própria?", r:"Não antes das análises institucionais. Qualquer instrumento que gere obrigações deve ser submetido a elas antes da assinatura."},
+  {cat:"Geral", q:"A aprovação da Coordenação significa que o pedido está aprovado?", r:"Não. Ela autoriza apenas o encaminhamento administrativo. Não é aprovação financeira, contábil, fiscal, contratual ou jurídica."},
+  {cat:"Geral", q:"Este guia é definitivo?", r:"Ele tem caráter orientativo. Políticas institucionais, normativos corporativos e orientações das áreas especializadas prevalecem sobre ele."},
+  {cat:"Geral", q:"Minha situação não aparece no guia. O que faço?", r:"Abra o chamado descrevendo o caso. Situações não contempladas são analisadas conjuntamente pelas áreas competentes, com base em conformidade, governança, transparência, responsabilidade e controle."}
+];
+
+/* ---- B4. CONTATOS (preencha email, ramal, responsavel quando quiser: aparecem automaticamente) ---- */
+const CONTATOS = [
+  {area:"Coordenação Administrativa DSE", c:"#0f4c81", funcao:"Orientação e encaminhamento",
+   desc:"Apoio, orientação, organização documental e análise administrativa dos processos da DSE. Atua na consulta orçamentária e devolve chamados com pendências.",
+   acionar:["Dúvidas sobre o fluxo e o preenchimento do chamado","Consulta orçamentária","Exceções e regularizações necessárias"],
+   canal:"Chamado no CitSmart > Coordenação Administrativa DSE", responsavel:"", email:"", ramal:""},
+  {area:"Suprimentos", c:"#1f7a3d", funcao:"Aquisição e contratação",
+   desc:"Conduz os processos de aquisição aplicáveis, incluindo cotação e diretrizes de compras.",
+   acionar:["Novo contrato e aquisições","Cotação de bens e serviços","Ordem de compra"],
+   canal:"", responsavel:"", email:"", ramal:""},
+  {area:"Financeiro (Contas a Pagar)", c:"#b25e00", funcao:"Pagamento",
+   desc:"Executa pagamentos conforme calendários, políticas financeiras e prazos operacionais institucionais.",
+   acionar:["Previsão de pagamento","Retorno sobre pendências de pagamento"],
+   canal:"", responsavel:"", email:"", ramal:""},
+  {area:"GEJUR (Jurídico)", c:"#6b4fbb", funcao:"Análise e formalização contratual",
+   desc:"Realiza a análise e a formalização contratual e avalia casos com indício de vínculo em contratações por RPA.",
+   acionar:["Minutas de contrato e aditivo","Dúvidas sobre RPA e vínculo","Direitos de imagem, autorais e proteção de dados"],
+   canal:"", responsavel:"", email:"", ramal:""},
+  {area:"Contabilidade", c:"#a3265b", funcao:"Registro e ajustes contábeis",
+   desc:"Área competente pelas validações contábeis e pela execução dos ajustes de reclassificação. A aprovação contábil não é da Coordenação.",
+   acionar:["Reclassificações","Dúvidas sobre classificação e registro contábil"],
+   canal:"", responsavel:"", email:"", ramal:""},
+  {area:"Projetos Sociais e Captação de Recursos", c:"#c2410c", funcao:"Captação de recursos",
+   desc:"Faz a análise técnica e estratégica das oportunidades de captação e acompanha os projetos.",
+   acionar:["Novas oportunidades de captação","Análise de concedentes e modalidades","Prestação de contas de projetos"],
+   canal:"", responsavel:"", email:"", ramal:""}
+];
+
+/* ---- B5. COMO MANTER E ATUALIZAR ESTE PORTAL ---- */
+const MANUTENCAO = [
+  {t:"1. Como o arquivo é organizado", b:[
+    "O portal é um único arquivo <code>index.html</code> com três partes: <b>(1) &lt;style&gt;</b> — visual; <b>(2) &lt;body&gt;</b> — esqueleto; <b>(3) &lt;script&gt;</b> — dividido em CONFIG, DADOS e MOTOR.",
+    "Todo o conteúdo editável está no bloco <b>DADOS</b> do script, dentro de listas simples. Menu, cards da página inicial, busca e páginas são gerados automaticamente a partir dele.",
+    {note:"Edite com um editor de texto (Bloco de Notas, VS Code). Salve em UTF-8 para manter os acentos e abra o arquivo no navegador para conferir."}
+  ]},
+  {t:"2. Atualizar o texto de um processo existente", b:[
+    "Localize <code>const PROCESSOS</code> e o processo pelo <code>id</code> (ex.: <code>nf</code>, <code>rpa</code>, <code>contrato</code>). Em cada processo:",
+    {ul:["<code>resumo</code> — visão geral","<code>quando</code> — lista “Quando utilizar”","<code>docs</code> — checklist de documentos","<code>fluxo</code> — etapas do fluxo (<code>t</code> título, <code>d</code> descrição)","<code>acionar</code> — tabela “Quem acionar” (necessidade, responsável)","<code>acc</code> — accordions com as orientações detalhadas","<code>proximo</code> — caixa “Próximo passo”","<code>keys</code> — palavras extras que ajudam a busca encontrar o processo"]}
+  ]},
+  {t:"3. Adicionar um novo processo", b:[
+    "Copie um objeto inteiro de <code>PROCESSOS</code>, cole ao final da lista (antes do <code>]</code>), mude <code>id</code> (sem espaços e único), <code>menu</code>, <code>card</code>, <code>icon</code> e os textos. Ele aparecerá sozinho no menu, na página inicial e na busca.",
+    {warn:"Cuidado com vírgulas: cada item da lista termina com <code>,</code> exceto o último. Textos entre aspas duplas não podem conter aspas duplas soltas; use aspas simples ou “ ”."}
+  ]},
+  {t:"4. Atualizar contatos", b:[
+    "Em <code>const CONTATOS</code>, preencha <code>responsavel</code>, <code>email</code>, <code>ramal</code> e <code>canal</code>. Campos vazios não aparecem; ao preencher, passam a ser exibidos no card.",
+    "Para incluir uma área, copie um card existente e ajuste <code>area</code>, <code>funcao</code>, <code>desc</code> e <code>acionar</code>."
+  ]},
+  {t:"5. Perguntas frequentes (FAQ)", b:[
+    "Em <code>const FAQ</code>, cada pergunta tem <code>cat</code> (categoria usada nos filtros), <code>q</code> (pergunta) e <code>r</code> (resposta). Para criar nova categoria, basta usar um novo nome em <code>cat</code>."
+  ]},
+  {t:"6. Cores, nome e identidade visual", b:[
+    "As cores ficam nas variáveis do início do <code>&lt;style&gt;</code> (<code>--brand</code>, <code>--brand-dark</code>, <code>--bg</code> etc.). O nome do portal e o subtítulo estão no <code>&lt;header&gt;</code> do HTML.",
+    "A cor de cada processo é definida em <code>c</code> (cor forte) e <code>cl</code> (cor clara de fundo) no próprio processo."
+  ]},
+  {t:"7. Controle de versão", b:[
+    "No bloco <code>PORTAL</code> (topo do script) atualize <code>versao</code> e <code>guiaData</code> sempre que o Guia em Word for revisado. Esses dados aparecem no rodapé.",
+    {note:"Boa prática: ao aprovar uma nova versão do Guia, atualize o portal no mesmo dia e guarde uma cópia do arquivo anterior com a data no nome (ex.: index_2026-09-29.html)."}
+  ]},
+  {t:"8. Publicação (intranet, Teams ou SharePoint)", b:[
+    "O arquivo funciona sozinho, sem internet e sem instalação. Opções de publicação:",
+    {ul:["<b>Servidor interno / intranet:</b> copie o <code>index.html</code> para a pasta do site.","<b>Microsoft Teams:</b> adicione uma aba do tipo “Site” apontando para o endereço onde o arquivo estiver hospedado.","<b>SharePoint:</b> bibliotecas costumam <i>baixar</i> arquivos .html em vez de exibi-los e páginas modernas bloqueiam scripts. Confirme com a TI qual alternativa é permitida (site com hospedagem de páginas estáticas, por exemplo)."]},
+    "Se for apenas distribuir, o arquivo também pode ser aberto diretamente no navegador a partir da rede ou do e-mail."
+  ]}
+];
+
+/* ==========================================================================
+   C) MOTOR — monta telas, menu, busca e navegação (não precisa editar)
+   ========================================================================== */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const store = {                       // localStorage protegido (pode estar bloqueado em alguns ambientes)
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ---- C1. Estrutura de seções (ordem do menu) ---- */
+const SECOES = [
+  {id:"apresentacao", menu:"Apresentação"},
+  ...PROCESSOS.map(p => ({id:p.id, menu:p.menu})),
+  {id:"faq", menu:"Perguntas Frequentes"},
+  {id:"contatos", menu:"Contatos e Responsáveis"},
+  {id:"manter", menu:"Como manter e atualizar este portal"}
+];
+
+/* ---- C2. Geradores de HTML ---- */
+function blocos(list){
+  return list.map(b => {
+    if(typeof b === "string") return `<p>${b}</p>`;
+    if(b.h)      return `<h4>${b.h}</h4>`;
+    if(b.ul)     return `<ul>${b.ul.map(i=>`<li>${i}</li>`).join("")}</ul>`;
+    if(b.note)   return `<div class="note"><span class="ic" aria-hidden="true">ℹ️</span><div>${b.note}</div></div>`;
+    if(b.warn)   return `<div class="warn"><span class="ic" aria-hidden="true">⚠️</span><div>${b.warn}</div></div>`;
+    if(b.danger) return `<div class="danger"><span class="ic" aria-hidden="true">🚫</span><div>${b.danger}</div></div>`;
+    return "";
+  }).join("");
+}
+let accSeq = 0;
+function accordion(titulo, corpo, extraClass=""){
+  const id = "acc" + (++accSeq);
+  return `<div class="acc ${extraClass}" data-unit="acc">
+    <h3 style="font-size:inherit"><button class="acc-btn" id="${id}-b" aria-expanded="false" aria-controls="${id}-p"><span>${titulo}</span><span class="chev" aria-hidden="true">▼</span></button></h3>
+    <div class="acc-panel" id="${id}-p" role="region" aria-labelledby="${id}-b"><div><div class="acc-body">${corpo}</div></div></div>
+  </div>`;
+}
+function accTools(){ return `<div class="acc-tools"><button class="link-btn" data-act="toggle-all">Expandir / recolher tudo</button></div>`; }
+function head(sec, icon, titulo, resumo, extraStyle=""){
+  const i = SECOES.findIndex(s => s.id === sec) + 1;
+  return `<div class="page-head" style="${extraStyle}">
+    <div class="badge" aria-hidden="true">${icon}</div>
+    <div><div class="eyebrow">Seção ${i} de ${SECOES.length}</div><h2 tabindex="-1">${titulo}</h2><p>${resumo}</p></div>
+  </div>`;
+}
+
+/* ---- C3. Páginas ---- */
+function pgInicio(){
+  const opts = SECOES.filter(s=>!["manter"].includes(s.id)).map(s=>`<option value="${s.id}">${s.menu}</option>`).join("");
+  const ajuda = [
+    ["Pagar uma nota fiscal ou boleto","nf"],["Contratar uma pessoa física (RPA)","rpa"],["Fechar um contrato novo","contrato"],
+    ["Alterar prazo, valor ou escopo de contrato","aditivo"],["Comprar bens ou contratar serviços","compras"],["Corrigir uma classificação de despesa","reclass"],
+    ["Cadastrar ou corrigir um fornecedor","regular"],["Registrar uma oportunidade de captação","captacao"],["Tirar uma dúvida rápida","faq"],["Saber com quem falar","contatos"]
+  ].map(([t,id])=>`<option value="${id}">${t}</option>`).join("");
+  return `
+  <section class="page" data-sec="inicio" aria-labelledby="t-inicio">
+    <div class="hero">
+      <div class="eyebrow" style="color:#cfe3f7">Diretoria Socioeducacional · Coordenação Administrativa</div>
+      <h2 id="t-inicio" tabindex="-1">Encontre o processo certo em poucos cliques</h2>
+      <p>Consulte aqui o passo a passo, os documentos e quem acionar em cada demanda administrativa da DSE. Baseado no ${PORTAL.guiaNome}, de ${PORTAL.guiaData}.</p>
+      <div class="finder">
+        <label for="finder-sel">Preciso…</label>
+        <select id="finder-sel"><option value="">Escolha o que você precisa fazer</option>${ajuda}</select>
+        <button id="finder-go">Ver orientação</button>
+      </div>
+    </div>
+
+    <h3 class="block-title">Processos</h3>
+    <div class="dash">
+      ${PROCESSOS.map(p=>`<button class="dcard" data-go="${p.id}" style="--c:${p.c};--c-l:${p.cl}" data-unit="card">
+        <span class="ic" aria-hidden="true">${p.icon}</span><b>${p.card}</b><span class="d">${p.curto}</span><span class="go">Abrir →</span></button>`).join("")}
+      <button class="dcard" data-go="faq" style="--c:#475569;--c-l:#eef2f7"><span class="ic" aria-hidden="true">❓</span><b>Perguntas frequentes</b><span class="d">${FAQ.length} respostas rápidas para as dúvidas mais comuns.</span><span class="go">Abrir →</span></button>
+      <button class="dcard" data-go="contatos" style="--c:#0f766e;--c-l:#e0f5f2"><span class="ic" aria-hidden="true">📇</span><b>Contatos</b><span class="d">Quem acionar em cada área e para quê.</span><span class="go">Abrir →</span></button>
+    </div>
+
+    <h3 class="block-title">Em cada processo você encontra</h3>
+    <ol class="five">
+      <li><b>O que fazer</b><span>Visão geral e quando utilizar.</span></li>
+      <li><b>Qual processo seguir</b><span>Fluxo visual passo a passo.</span></li>
+      <li><b>Quais documentos reunir</b><span>Checklist para marcar.</span></li>
+      <li><b>Quem acionar</b><span>Tabela de responsáveis.</span></li>
+      <li><b>Qual o próximo passo</b><span>Caixa de ação ao final.</span></li>
+    </ol>
+
+    <div class="warn" style="margin-top:26px"><span class="ic" aria-hidden="true">⚠️</span><div><b>Lembrete:</b> a aprovação da Coordenação Administrativa DSE autoriza o encaminhamento da demanda, mas não é aprovação financeira, contábil, fiscal, contratual ou jurídica.</div></div>
+  </section>`;
+}
+
+function pgApresentacao(){
+  const A = APRESENTACAO;
+  return `
+  <section class="page" data-sec="apresentacao" aria-labelledby="t-apresentacao" hidden>
+    ${head("apresentacao","📘","Apresentação",A.resumo)}
+    <div class="grid2">
+      <div class="card"><h3>🎯 Objetivos do guia</h3><ul class="when">${A.objetivos.map(o=>`<li>${o}</li>`).join("")}</ul></div>
+      <div class="card"><h3>🧭 Papel da Coordenação Administrativa DSE</h3><p>${A.papel}</p></div>
+    </div>
+    <div class="vs">
+      <div class="card yes"><h3>✅ O que a Coordenação faz</h3><ul>${A.faz.map(o=>`<li>${o}</li>`).join("")}</ul></div>
+      <div class="card no"><h3>🚫 O que a Coordenação não faz</h3><ul>${A.naoFaz.map(o=>`<li>${o}</li>`).join("")}</ul></div>
+    </div>
+    <div class="danger" style="margin-top:20px"><span class="ic" aria-hidden="true">🚫</span><div class="alert-big">${A.aviso}</div></div>
+    <h3 class="block-title">Mais informações</h3>
+    ${accTools()}
+    ${accordion("Disposições finais", A.finais.map(f=>`<p>${f}</p>`).join(""))}
+    ${accordion("Como usar este portal", `<ul><li>Use o <b>menu lateral</b> ou os cards da página inicial para abrir um processo.</li><li>Use a <b>pesquisa</b> no topo (ex.: “nota”, “contrato”, “rpa”). Os trechos encontrados ficam destacados.</li><li>Em cada processo, clique nas etapas do <b>fluxo</b> para ver o detalhe e marque o <b>checklist</b> de documentos.</li><li>Abra os blocos <b>sanfonados</b> para ver as orientações detalhadas.</li></ul>`)}
+  </section>`;
+}
+
+function pgProcesso(p){
+  const n = SECOES.findIndex(s=>s.id===p.id);
+  const aviso = p.alerta ? `<div class="danger"><span class="ic" aria-hidden="true">🚫</span><div class="alert-big">${p.alerta}</div></div>` : "";
+  return `
+  <section class="page" data-sec="${p.id}" aria-labelledby="t-${p.id}" hidden style="--c:${p.c};--c-l:${p.cl}">
+    ${head(p.id,p.icon,p.menu,p.resumo)}
+    ${aviso}
+    <div class="grid2">
+      <div class="card"><h3>🔎 Quando utilizar</h3><ul class="when">${p.quando.map(q=>`<li>${q}</li>`).join("")}</ul></div>
+      <div class="card" data-checklist="${p.id}"><h3>📋 ${p.docsTitulo}</h3>
+        <ul class="check">${p.docs.map((d,i)=>`<li><label><input type="checkbox" data-i="${i}"><span>${d}</span></label></li>`).join("")}</ul>
+        <div class="progress"><div class="bar"><i></i></div><span class="pcount"></span><button class="link-btn" data-act="reset-check">Limpar</button></div>
+      </div>
+    </div>
+
+    <h3 class="block-title">Fluxo do processo <small>clique em uma etapa para ver o detalhe</small></h3>
+    <div data-flow="${p.id}">
+      <ol class="flow">${p.fluxo.map((f,i)=>`<li><button class="step" data-i="${i}" aria-pressed="${i===0}"><span class="n">${i+1}</span><span class="t">${f.t}</span></button></li>`).join("")}</ol>
+      <div class="flow-detail" aria-live="polite"></div>
+    </div>
+
+    <h3 class="block-title">Quem acionar</h3>
+    <div class="table-wrap"><table>
+      <caption>Para cada necessidade, a área responsável</caption>
+      <thead><tr><th scope="col">Necessidade</th><th scope="col">Responsável</th></tr></thead>
+      <tbody>${p.acionar.map(([a,b])=>`<tr><td>${a}</td><td><span class="resp">${b}</span></td></tr>`).join("")}</tbody>
+    </table></div>
+
+    ${p.extra==="reclass" ? reclassExtra() : ""}
+
+    <h3 class="block-title">Orientações detalhadas</h3>
+    ${accTools()}
+    ${p.acc.map(a=>accordion(a.t, blocos(a.b))).join("")}
+
+    <div class="next"><h3>Próximo passo</h3><p>${p.proximo}</p></div>
+  </section>`;
+}
+
+function reclassExtra(){
+  const F = [
+    ["Origem","📤","Classificação atual do lançamento (de onde a despesa sai): centro de resultado, natureza ou classificação orçamentária hoje registrada."],
+    ["Destino","📥","Classificação pretendida (para onde a despesa deve ir) após o ajuste."],
+    ["Centro de Custo","🏢","Centro de custo/resultado envolvido na origem e no destino."],
+    ["CR","🔢","Centro de responsabilidade (CR) vinculado ao lançamento, o mesmo informado nos pagamentos."],
+    ["Filial","📍","Filial/unidade a que o lançamento pertence, quando houver mais de uma envolvida. Confirme o padrão com a área competente."],
+    ["Justificativa","💬","Motivo claro da correção, com documentos de suporte que comprovem o erro ou a necessidade."]
+  ];
+  return `
+    <h3 class="block-title">Campos que você precisa entender <small>área especial de Reclassificações</small></h3>
+    <div class="fields">${F.map(([t,i,d])=>`<div class="field"><b><span class="k" aria-hidden="true">${i}</span>${t}</b><span>${d}</span></div>`).join("")}</div>
+
+    <h3 class="block-title">Apoio ao preenchimento <small>gera um texto para copiar no chamado — nada é enviado ou salvo</small></h3>
+    <div class="card">
+      <form class="form" id="rc-form" onsubmit="return false">
+        <div><label for="rc-o">Origem (classificação atual)</label><input id="rc-o"></div>
+        <div><label for="rc-d">Destino (classificação pretendida)</label><input id="rc-d"></div>
+        <div><label for="rc-cc">Centro de custo / resultado</label><input id="rc-cc"></div>
+        <div><label for="rc-cr">CR</label><input id="rc-cr"></div>
+        <div><label for="rc-f">Filial</label><input id="rc-f"></div>
+        <div class="full"><label for="rc-j">Justificativa</label><textarea id="rc-j" rows="3"></textarea></div>
+        <div class="full" style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" id="rc-gen">Gerar resumo</button>
+          <button class="btn sec" id="rc-copy">Copiar</button>
+          <span id="rc-msg" class="sr-only" aria-live="polite"></span>
+        </div>
+      </form>
+      <label for="rc-out" class="sr-only">Resumo gerado</label>
+      <textarea id="rc-out" class="out" readonly placeholder="O resumo aparecerá aqui."></textarea>
+    </div>`;
+}
+
+function pgFaq(){
+  const cats = ["Todas", ...new Set(FAQ.map(f=>f.cat))];
+  return `
+  <section class="page" data-sec="faq" aria-labelledby="t-faq" hidden>
+    ${head("faq","❓","Perguntas Frequentes",`${FAQ.length} respostas rápidas, todas baseadas no Guia. Use a pesquisa do topo para filtrar por palavra.`)}
+    <div class="faq-tools" role="group" aria-label="Filtrar por assunto">
+      ${cats.map((c,i)=>`<button class="chip" data-cat="${c}" aria-pressed="${i===0}">${c}</button>`).join("")}
+    </div>
+    ${accTools()}
+    <div id="faq-list">${FAQ.map(f=>accordion(f.q, `<p>${f.r}</p>`, "faq-item").replace('data-unit="acc"',`data-unit="faq" data-cat="${f.cat}"`)).join("")}</div>
+  </section>`;
+}
+
+function pgContatos(){
+  return `
+  <section class="page" data-sec="contatos" aria-labelledby="t-contatos" hidden>
+    ${head("contatos","📇","Contatos e Responsáveis","Áreas envolvidas nos processos, o que cada uma faz e quando acioná-la.")}
+    <div class="contacts">
+      ${CONTATOS.map(c=>`<article class="contato" data-unit="contato" style="--c:${c.c}">
+        <h3>${c.area}</h3><span class="fn">${c.funcao}</span>
+        <p>${c.desc}</p>
+        <b style="font-size:.88rem">Acione para:</b>
+        <ul>${c.acionar.map(a=>`<li>${a}</li>`).join("")}</ul>
+        <dl>
+          ${c.canal?`<div class="row"><dt>Canal:</dt><dd>${c.canal}</dd></div>`:""}
+          ${c.responsavel?`<div class="row"><dt>Responsável:</dt><dd>${c.responsavel}</dd></div>`:""}
+          ${c.email?`<div class="row"><dt>E-mail:</dt><dd><a href="mailto:${c.email}">${c.email}</a></dd></div>`:""}
+          ${c.ramal?`<div class="row"><dt>Ramal:</dt><dd>${c.ramal}</dd></div>`:""}
+        </dl>
+      </article>`).join("")}
+    </div>
+    <div class="note" style="margin-top:20px"><span class="ic" aria-hidden="true">ℹ️</span><div>Na dúvida, a porta de entrada é sempre a Coordenação Administrativa DSE, por chamado no CitSmart. Ela orienta e encaminha para a área correta.</div></div>
+  </section>`;
+}
+
+function pgManter(){
+  return `
+  <section class="page" data-sec="manter" aria-labelledby="t-manter" hidden>
+    ${head("manter","🛠️","Como manter e atualizar este portal",`Guia rápido para quem edita o conteúdo. Versão ${PORTAL.versao} · baseada no Guia de ${PORTAL.guiaData}.`)}
+    ${accTools()}
+    ${MANUTENCAO.map(m=>accordion(m.t, blocos(m.b))).join("")}
+    <h3 class="block-title">Exemplo: adicionar um processo</h3>
+<pre>{
+  id:"viagens", menu:"Viagens", card:"Viagens", icon:"✈️", c:"#0f4c81", cl:"#e7f0f9",
+  keys:"viagem passagem hospedagem diária",
+  curto:"Solicitar viagens a serviço.",
+  resumo:"Texto de visão geral…",
+  quando:["Situação 1","Situação 2"],
+  docsTitulo:"Documentos necessários", docs:["Documento A","Documento B"],
+  fluxo:[{t:"Necessidade", d:"Descrição…"},{t:"Validação", d:"Descrição…"}],
+  acionar:[["Aprovação","Coordenação Administrativa DSE"]],
+  acc:[{t:"Orientações", b:["Texto…",{ul:["Item 1","Item 2"]}]}],
+  proximo:"Abra o chamado…"
+},</pre>
+  </section>`;
+}
+
+/* ---- C4. Renderização inicial ---- */
+function render(){
+  $("#conteudo").insertAdjacentHTML("beforeend",
+    pgInicio() + pgApresentacao() + PROCESSOS.map(pgProcesso).join("") + pgFaq() + pgContatos() + pgManter() +
+    `<footer>Guia de Processos Administrativos · Coordenação Administrativa · versão ${PORTAL.versao} · conteúdo baseado no ${PORTAL.guiaNome}, de ${PORTAL.guiaData}. Este portal é orientativo: políticas institucionais e orientações das áreas especializadas prevalecem.</footer>`);
+
+  // menu lateral
+  $("#menu").innerHTML = `
+    <div class="label">Navegação</div>
+    <ul><li><button class="nav-link" data-go="inicio"><span class="num" aria-hidden="true">⌂</span>Página inicial</button></li></ul>
+    <div class="label">Conteúdo</div>
+    <ol>${SECOES.map((s,i)=>`<li><button class="nav-link" data-go="${s.id}"><span class="num" aria-hidden="true">${i+1}</span>${s.menu}</button></li>`).join("")}</ol>`;
+}
+
+/* ---- C5. Navegação por seções (hash: #/nf) ---- */
+let atual = "inicio";
+function show(id, {focus=true}={}){
+  if(!$(`.page[data-sec="${id}"]`)) id = "inicio";
+  atual = id;
+  $$(".page").forEach(s => s.hidden = s.dataset.sec !== id);
+  $$(".nav-link").forEach(b => b.dataset.go === id ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
+  document.body.classList.remove("menu-open");
+  $("#burger").setAttribute("aria-expanded","false");
+  window.scrollTo({top:0, behavior:"auto"});
+  const sec = $(`.page[data-sec="${id}"]`);
+  document.title = (id==="inicio" ? "" : (SECOES.find(s=>s.id===id)||{}).menu + " · ") + "Guia de Processos Administrativos";
+  if(focus){ const h = $("h2", sec); if(h) h.focus({preventScroll:true}); }
+  applyHighlight();
+}
+function go(id, opts){
+  if(location.hash === "#/" + id){ show(id, opts); } else { location.hash = "#/" + id; }
+}
+window.addEventListener("hashchange", () => show((location.hash.match(/^#\/(.+)$/)||[])[1] || "inicio"));
+
+/* ---- C6. Accordions, fluxo, checklist, FAQ, reclassificação (delegação de eventos) ---- */
+function setAcc(acc, open){
+  const b = $(".acc-btn", acc), p = $(".acc-panel", acc);
+  b.setAttribute("aria-expanded", open); p.classList.toggle("open", open);
+}
+function setupFlows(){
+  PROCESSOS.forEach(p => {
+    const box = $(`[data-flow="${p.id}"]`);
+    const sel = i => {
+      $$(".step", box).forEach((b,k)=>b.setAttribute("aria-pressed", k===i));
+      $(".flow-detail", box).innerHTML = `<b>Etapa ${i+1} — ${p.fluxo[i].t}.</b> ${p.fluxo[i].d}`;
+    };
+    box.addEventListener("click", e => { const b = e.target.closest(".step"); if(b) sel(+b.dataset.i); });
+    sel(0);
+  });
+}
+function setupChecklists(){
+  PROCESSOS.forEach(p => {
+    const card = $(`[data-checklist="${p.id}"]`), boxes = $$("input", card);
+    const upd = () => {
+      const n = boxes.filter(b=>b.checked).length;
+      $(".bar i", card).style.width = (n/boxes.length*100) + "%";
+      $(".pcount", card).textContent = `${n} de ${boxes.length} reunidos`;
+      store.set("dse-check-"+p.id, boxes.map(b=>b.checked));
+    };
+    const saved = store.get("dse-check-"+p.id);
+    if(Array.isArray(saved)) boxes.forEach((b,i)=> b.checked = !!saved[i]);
+    card.addEventListener("change", upd);
+    card.addEventListener("click", e => { if(e.target.dataset.act==="reset-check"){ boxes.forEach(b=>b.checked=false); upd(); } });
+    upd();
+  });
+}
+function setupReclass(){
+  const g = id => $("#"+id);
+  if(!g("rc-gen")) return;
+  const gerar = () => {
+    const v = id => (g(id).value || "").trim() || "(não informado)";
+    g("rc-out").value =
+`SOLICITAÇÃO DE RECLASSIFICAÇÃO
+Origem (classificação atual): ${v("rc-o")}
+Destino (classificação pretendida): ${v("rc-d")}
+Centro de custo/resultado: ${v("rc-cc")}
+CR: ${v("rc-cr")}
+Filial: ${v("rc-f")}
+Justificativa: ${v("rc-j")}
+
+Documentos de suporte anexados: (listar)
+Áreas envolvidas: (listar)`;
+  };
+  g("rc-gen").addEventListener("click", gerar);
+  g("rc-copy").addEventListener("click", () => {
+    if(!g("rc-out").value) gerar();
+    const out = g("rc-out"); out.select();
+    let ok = false;
+    try{ ok = document.execCommand("copy"); }catch(e){}
+    if(!ok && navigator.clipboard){ navigator.clipboard.writeText(out.value).then(()=>{ok=true;}).catch(()=>{}); }
+    g("rc-msg").textContent = "Resumo copiado.";
+  });
+}
+
+document.addEventListener("click", e => {
+  const t = e.target;
+  // sanfona
+  const ab = t.closest(".acc-btn");
+  if(ab){ setAcc(ab.closest(".acc"), ab.getAttribute("aria-expanded") !== "true"); return; }
+  // expandir/recolher tudo
+  if(t.dataset && t.dataset.act === "toggle-all"){
+    const accs = $$(".acc", t.closest(".page")).filter(a => !a.hidden);
+    const abrir = accs.some(a => $(".acc-btn", a).getAttribute("aria-expanded") !== "true");
+    accs.forEach(a => setAcc(a, abrir));
+    return;
+  }
+  // navegação
+  const g = t.closest("[data-go]");
+  if(g){ go(g.dataset.go); return; }
+  // filtro FAQ
+  const chip = t.closest(".chip");
+  if(chip){
+    $$(".chip").forEach(c => c.setAttribute("aria-pressed", c===chip));
+    $$("#faq-list [data-unit='faq']").forEach(a => a.hidden = chip.dataset.cat !== "Todas" && a.dataset.cat !== chip.dataset.cat);
+  }
+});
+document.addEventListener("click", e => {
+  if(e.target.id === "finder-go"){ const v = $("#finder-sel").value; if(v) go(v); else $("#finder-sel").focus(); }
+});
+$("#brand").addEventListener("click", () => go("inicio"));
+$("#totop").addEventListener("click", () => { window.scrollTo({top:0}); $("#conteudo").focus({preventScroll:true}); });
+
+// menu móvel
+$("#burger").addEventListener("click", () => {
+  const open = document.body.classList.toggle("menu-open");
+  $("#burger").setAttribute("aria-expanded", open);
+});
+$("#scrim").addEventListener("click", () => { document.body.classList.remove("menu-open"); $("#burger").setAttribute("aria-expanded","false"); });
+
+/* ---- C7. Busca em tempo real com destaque ---- */
+let unidades = [];
+function indexar(){
+  unidades = [];
+  SECOES.forEach(s => {
+    const p = PROCESSOS.find(x=>x.id===s.id);
+    const extra = p ? (p.keys + " " + p.resumo + " " + p.card) : s.menu;
+    unidades.push({sec:s.id, tipo:"Seção", titulo:s.menu, el:null, texto:s.menu + " " + extra, rank:0});
+  });
+  $$(".page").forEach(pg => {
+    const sec = pg.dataset.sec; if(sec==="inicio") return;
+    $$("[data-unit='acc'],[data-unit='faq']", pg).forEach(a => {
+      unidades.push({sec, tipo: a.dataset.unit==="faq" ? "FAQ" : "Orientação", titulo:$(".acc-btn span", a).textContent, el:a, texto:a.textContent, rank:2});
+    });
+    $$("[data-unit='contato']", pg).forEach(a => unidades.push({sec, tipo:"Contato", titulo:$("h3",a).textContent, el:a, texto:a.textContent, rank:2}));
+  });
+  unidades.forEach(u => { u.nt = norm(u.texto); u.ntit = norm(u.titulo); });
+}
+let termo = "";
+function buscar(q){
+  const nq = norm(q.trim());
+  if(nq.length < 2) return [];
+  return unidades.filter(u => u.nt.includes(nq))
+    .map(u => ({...u, score: (u.ntit.includes(nq) ? 0 : 1) + (u.tipo==="Seção" ? 0 : 1)}))
+    .sort((a,b) => a.score - b.score);
+}
+function secNome(id){ return (SECOES.find(s=>s.id===id)||{}).menu || ""; }
+function mostrarResultados(){
+  const box = $("#results"), inp = $("#q");
+  termo = inp.value;
+  $("#qclear").style.display = termo ? "block" : "none";
+  if(norm(termo.trim()).length < 2){ box.classList.remove("open"); inp.setAttribute("aria-expanded","false"); applyHighlight(); return; }
+  const r = buscar(termo), max = 14;
+  box.innerHTML = r.length
+    ? `<div class="meta">${r.length} resultado${r.length>1?"s":""} para “${termo.replace(/</g,"&lt;")}”${r.length>max?` · mostrando ${max}`:""}</div><ul>${r.slice(0,max).map((u,i)=>`<li><button class="hit" data-hit="${i}"><b><span class="tag">${u.tipo}</span>${u.titulo}</b>${u.tipo==="Seção"?"":`<small>em ${secNome(u.sec)}</small>`}</button></li>`).join("")}</ul>`
+    : `<div class="meta">Nenhum resultado para “${termo.replace(/</g,"&lt;")}”. Tente outra palavra (ex.: nota, contrato, rpa, boleto).</div>`;
+  box._r = r;
+  box.classList.add("open"); inp.setAttribute("aria-expanded","true");
+  applyHighlight();
+}
+function abrirResultado(u){
+  $("#results").classList.remove("open"); $("#q").setAttribute("aria-expanded","false");
+  go(u.sec, {focus:false});
+  setTimeout(() => {
+    if(u.el){
+      if(u.el.classList.contains("acc")){ u.el.hidden = false; setAcc(u.el, true); }
+      u.el.scrollIntoView({block:"center", behavior:"smooth"});
+      u.el.classList.remove("flash"); void u.el.offsetWidth; u.el.classList.add("flash");
+      const b = $(".acc-btn", u.el); if(b) b.focus({preventScroll:true});
+    } else { const h = $(`.page[data-sec="${u.sec}"] h2`); if(h) h.focus({preventScroll:true}); }
+  }, 80);
+}
+function clearMarks(root){
+  $$("mark.hl", root).forEach(m => { const p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); });
+}
+function marcar(root, q){
+  const nq = norm(q.trim()); if(nq.length < 2) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode:n =>
+    (!n.nodeValue.trim() || n.parentElement.closest("script,style,textarea,input,select,pre")) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT});
+  const nos = []; while(w.nextNode()) nos.push(w.currentNode);
+  nos.forEach(n => {
+    const t = n.nodeValue, nt = norm(t); if(nt.length !== t.length) return;
+    let i = nt.indexOf(nq); if(i < 0) return;
+    const frag = document.createDocumentFragment(); let last = 0;
+    while(i >= 0){
+      frag.append(t.slice(last,i));
+      const m = document.createElement("mark"); m.className = "hl"; m.textContent = t.slice(i, i+nq.length); frag.append(m);
+      last = i + nq.length; i = nt.indexOf(nq, last);
+    }
+    frag.append(t.slice(last)); n.parentNode.replaceChild(frag, n);
+  });
+}
+function applyHighlight(){
+  const main = $("#conteudo");
+  clearMarks(main);
+  if(norm((termo||"").trim()).length >= 2){ const pg = $(`.page[data-sec="${atual}"]`); if(pg) marcar(pg, termo); }
+}
+function setupBusca(){
+  const inp = $("#q"), box = $("#results");
+  let t; inp.addEventListener("input", () => { clearTimeout(t); t = setTimeout(mostrarResultados, 80); });
+  inp.addEventListener("keydown", e => {
+    const hits = $$(".hit", box);
+    if(e.key === "ArrowDown" && hits.length){ e.preventDefault(); hits[0].focus(); }
+    if(e.key === "Enter" && box._r && box._r.length){ e.preventDefault(); abrirResultado(box._r[0]); }
+    if(e.key === "Escape"){ box.classList.remove("open"); inp.setAttribute("aria-expanded","false"); }
+  });
+  box.addEventListener("keydown", e => {
+    const hits = $$(".hit", box), i = hits.indexOf(document.activeElement);
+    if(e.key === "ArrowDown"){ e.preventDefault(); (hits[i+1]||hits[i]).focus(); }
+    if(e.key === "ArrowUp"){ e.preventDefault(); (i>0 ? hits[i-1] : inp).focus(); }
+    if(e.key === "Escape"){ box.classList.remove("open"); inp.focus(); }
+  });
+  box.addEventListener("click", e => { const b = e.target.closest(".hit"); if(b) abrirResultado(box._r[+b.dataset.hit]); });
+  $("#qclear").addEventListener("click", () => { inp.value = ""; mostrarResultados(); inp.focus(); });
+  document.addEventListener("click", e => { if(!e.target.closest(".search")){ box.classList.remove("open"); inp.setAttribute("aria-expanded","false"); } });
+  // atalho: "/" foca a pesquisa
+  document.addEventListener("keydown", e => {
+    if(e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){ e.preventDefault(); inp.focus(); }
+  });
+}
+
+/* ---- C8. Inicialização ---- */
+render();
+setupFlows();
+setupChecklists();
+setupReclass();
+indexar();
+setupBusca();
+show((location.hash.match(/^#\/(.+)$/)||[])[1] || "inicio", {focus:false});
+</script>
+</body>
+</html>
+
+</body></html>
